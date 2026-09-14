@@ -33,10 +33,11 @@ handed straight back when you let go.
 | Ping wheel key | Sets the real keybind, so it also shows up in Blizzard's Key Bindings panel |
 | Enabled | Turns the wheel off without unbinding its key |
 | Environment only | Off sends ordinary pings that obey your Ping Target setting |
+| Instant ping (no wheel) | Skips the wheel: hold the key and the mouse-down itself sends a plain ping, exactly under the cursor. Wheel settings are ignored while on |
 | Click without moving pings | Off makes a no-flick release cancel instead |
 | Dead zone | How far you must flick before an icon is chosen — also how far the ping can miss by |
 | Wheel radius | Appearance only; an icon is chosen by direction, not distance |
-| Pings on the wheel | Which of the six ping types appear |
+| Pings on the wheel | Which of the six ping types appear, and in what order. Drag a row by its grip on the left; the top of the list is the top of the wheel and the rest follow clockwise |
 
 ## How it works, and what constrains it
 

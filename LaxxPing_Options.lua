@@ -415,11 +415,73 @@ function W.Stepper(parent, y, index, text, tip, get, set, minV, maxV, step, suff
     return r, ROW_H
 end
 
--- One ping type: its own icon at the size the wheel draws it, its localized
--- name, and a toggle. The icon is here because the name alone does not tell
--- you which marker your group will see.
-function W.PingRow(parent, y, index, def)
+-- The ping list. One row per POSITION rather than per type: a row is told
+-- which type it currently shows, so reordering repaints six rows in place and
+-- never has to move a frame or re-run the page cursor.
+--
+-- Dragging is by the grip on the left and nowhere else, so the rest of the
+-- row keeps its one job -- click to toggle -- and a slightly-moved click can
+-- never be mistaken for a reorder. The list reorders LIVE under the cursor:
+-- the dragged type swaps places the moment the pointer crosses into another
+-- row, which is what makes a drag read as moving the row rather than as
+-- choosing a slot to drop it in.
+local pingRows = {}
+local GRIP_W = 14
+
+local function PingRowAt(y)
+    -- Rows and the cursor are compared in the page's own space, so a UI scale
+    -- change between opening and dragging cannot skew the hit test.
+    local n = #pingRows
+    if n == 0 then return nil end
+    if y >= (pingRows[1]:GetTop() or 0) then return 1 end
+    if y <= (pingRows[n]:GetBottom() or 0) then return n end
+    for i = 1, n do
+        local r = pingRows[i]
+        local top, bottom = r:GetTop(), r:GetBottom()
+        if top and bottom and y <= top and y >= bottom then return i end
+    end
+    return nil
+end
+
+-- One drag at a time, driven from a frame of its own so an OnUpdate is only
+-- ever paid while the mouse is actually held on a grip.
+local drag = CreateFrame("Frame")
+drag:Hide()
+drag.pos = nil
+
+local function PaintPingRows()
+    for _, r in ipairs(pingRows) do r.Paint() end
+end
+
+local function EndDrag(commit)
+    if not drag.pos then return end
+    drag.pos = nil
+    drag:Hide()
+    PaintPingRows()
+    if commit then ns.Refresh() end
+end
+
+drag:SetScript("OnUpdate", function()
+    if not drag.pos then drag:Hide() return end
+    -- The up edge normally arrives at the grip that took the down edge, but
+    -- a release swallowed by a window losing focus would leave the drag
+    -- armed forever; the button state is the ground truth.
+    if not IsMouseButtonDown("LeftButton") then EndDrag(true) return end
+    local _, y = InputUtil.GetCursorPosition(content)
+    local target = PingRowAt(y)
+    if target and target ~= drag.pos and ns.MoveType(drag.pos, target) then
+        drag.pos = target
+        PaintPingRows()
+    end
+end)
+
+function W.PingRow(parent, y, index, pos)
     local r = Row(parent, y, COMPACT_H, index)
+    r.pos = pos
+
+    -- The accent frame that marks the row being dragged. Off until then.
+    local outline = ns.CreateBorder(r, 2)
+    outline:Hide()
 
     local track = CreateFrame("Frame", nil, r)
     track:SetSize(36, CTRL_H)
@@ -430,23 +492,58 @@ function W.PingRow(parent, y, index, def)
     knob:SetColorTexture(1, 1, 1, 1)
     knob:SetSize(CTRL_H - 6, CTRL_H - 6)
 
+    -- The grip: three short horizontal strips, the universal "this moves"
+    -- glyph. Its hit area is the full row height and wider than the glyph,
+    -- because a 10px target is not one a player can find in a hurry.
+    local grip = CreateFrame("Frame", nil, r)
+    grip:SetWidth(GRIP_W + PAD * 0.5)
+    grip:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+    grip:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
+    grip:EnableMouse(true)
+    grip.lines = {}
+    for i = 1, 3 do
+        local t = grip:CreateTexture(nil, "ARTWORK")
+        t:SetColorTexture(1, 1, 1, 1)
+        t:SetSnapToPixelGrid(false)
+        t:SetTexelSnappingBias(0)
+        t:SetSize(10, 1)
+        t:SetPoint("CENTER", grip, "CENTER", PAD * 0.25, (2 - i) * 4)
+        grip.lines[i] = t
+    end
+
     local icon = r:CreateTexture(nil, "ARTWORK")
     icon:SetSize(COMPACT_H - 10, COMPACT_H - 10)
-    icon:SetPoint("LEFT", r, "LEFT", PAD * 0.5, 0)
-    icon:SetAtlas(def.atlas)
+    icon:SetPoint("LEFT", grip, "RIGHT", 0, 0)
 
     local label = FS(r, FS_BODY, TEXT)
     label:SetPoint("LEFT", icon, "RIGHT", LABEL_GAP, 0)
     label:SetPoint("RIGHT", track, "LEFT", -LABEL_GAP, 0)
-    label:SetText(def.name)
 
     local db = ns.DB()
 
+    local function Def()
+        return ns.OrderedTypes()[r.pos]
+    end
+
+    local function PaintGrip(hover)
+        local a = hover and 0.9 or 0.35
+        for _, t in ipairs(grip.lines) do
+            t:SetHeight(math.max(ns.OnePixel(r) * 1.5, 1))
+            t:SetVertexColor(1, 1, 1, a)
+        end
+    end
+
     local function Paint()
+        local def = Def()
+        if not def then r:Hide() return end
+        r:Show()
+        icon:SetAtlas(def.atlas)
+        label:SetText(def.name)
+
         local on = db.enabledTypes[def.key] and true or false
+        local ac = ns.ACCENT
         if on then
-            local a = ns.ACCENT
-            trackFill:SetColorTexture(a[1], a[2], a[3], 0.75)
+            trackFill:SetColorTexture(ac[1], ac[2], ac[3], 0.75)
             knob:SetVertexColor(1, 1, 1, 1)
             knob:ClearAllPoints()
             knob:SetPoint("RIGHT", track, "RIGHT", -3, 0)
@@ -460,10 +557,46 @@ function W.PingRow(parent, y, index, def)
             icon:SetAlpha(0.35)
             label:SetTextColor(TEXT_SEC[1], TEXT_SEC[2], TEXT_SEC[3], TEXT_SEC[4])
         end
+
+        local dragging = drag.pos == r.pos
+        if dragging then
+            ns.UpdateBorder(outline, 1, ac[1], ac[2], ac[3], 0.9)
+            outline:Show()
+        else
+            outline:Hide()
+        end
+        PaintGrip(dragging or grip:IsMouseOver())
     end
+
+    grip:SetScript("OnMouseDown", function(_, button)
+        if button ~= "LeftButton" or drag.pos then return end
+        drag.pos = r.pos
+        drag:Show()
+        PaintPingRows()
+    end)
+    grip:SetScript("OnMouseUp", function(_, button)
+        if button == "LeftButton" then EndDrag(true) end
+    end)
+    grip:SetScript("OnEnter", function()
+        PaintGrip(true)
+        local def = Def()
+        if not def then return end
+        GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(def.name, 1, 1, 1)
+        GameTooltip:AddLine("Drag to reorder. The top of this list is the top of the wheel, "
+            .. "and the rest follow clockwise.", 0.7, 0.7, 0.7, true)
+        GameTooltip:Show()
+    end)
+    grip:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+        PaintGrip(drag.pos == r.pos)
+    end)
 
     r:EnableMouse(true)
     r:SetScript("OnMouseUp", function()
+        if drag.pos then return end
+        local def = Def()
+        if not def then return end
         local on = not db.enabledTypes[def.key]
         -- An empty wheel would leave the player holding a key that can only
         -- ever cancel, so the last entry standing refuses to be turned off.
@@ -481,8 +614,18 @@ function W.PingRow(parent, y, index, def)
         Paint()
         ns.Refresh()
     end)
-    Tooltip(r, def.name, "Show this ping on the wheel.")
+    r:SetScript("OnEnter", function()
+        local def = Def()
+        if not def then return end
+        GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(def.name, 1, 1, 1)
+        GameTooltip:AddLine("Show this ping on the wheel.", 0.7, 0.7, 0.7, true)
+        GameTooltip:Show()
+    end)
+    r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     r.Paint = Paint
+    pingRows[pos] = r
     Paint()
 
     return r, COMPACT_H
@@ -529,6 +672,15 @@ local function BuildPage(parent)
         function(v) db.environmentOnly = v; ns.Refresh() end);    y = y - h
     rows[#rows + 1] = r
 
+    r, h = W.Toggle(parent, y, next_index(), "Instant ping (no wheel)",
+        "Skip the wheel entirely: holding the key and pressing the mouse "
+        .. "button sends a plain ping the moment you press, exactly where the "
+        .. "cursor is. No flick, no release to wait for. The wheel settings "
+        .. "below do nothing while this is on.",
+        function() return db.instantPing end,
+        function(v) db.instantPing = v; ns.Refresh() end);        y = y - h
+    rows[#rows + 1] = r
+
     r, h = W.Toggle(parent, y, next_index(), "Click without moving pings",
         "Release the mouse without flicking and a plain ping lands exactly "
         .. "where you clicked. This is the only gesture with no drift at all. "
@@ -561,8 +713,8 @@ local function BuildPage(parent)
     rows[#rows + 1] = r
 
     i = 0
-    for _, def in ipairs(ns.PING_TYPES) do
-        r, h = W.PingRow(parent, y, next_index(), def);           y = y - h
+    for pos = 1, #ns.PING_TYPES do
+        r, h = W.PingRow(parent, y, next_index(), pos);           y = y - h
         rows[#rows + 1] = r
     end
 
@@ -647,6 +799,10 @@ local function BuildWindow()
     -- Re-derive the canvas scale on every open: resolution, monitor and UI
     -- scale all change while the window is closed, so PLAYER_LOGIN is not the
     -- last word on any of them.
+    -- A drag must not outlive the window: Escape mid-drag would otherwise
+    -- leave the row outlined and the driver ticking behind a hidden frame.
+    f:SetScript("OnHide", function() EndDrag(true) end)
+
     f:SetScript("OnShow", function(self)
         ns.RefreshPhysical()
         self:SetScale(CanvasScale())
@@ -663,9 +819,13 @@ end
 local function RefreshHint()
     if not window then return end
     local key = GetBindingKey("LAXXPING_HOLD")
-    window.hint:SetText(key
-        and ("Hold " .. (GetBindingText(key) or key) .. ", left-click, flick, release.")
-        or "|cffff5555No key bound|r -- set one above.")
+    if not key then
+        window.hint:SetText("|cffff5555No key bound|r -- set one above.")
+    elseif ns.DB().instantPing then
+        window.hint:SetText("Hold " .. (GetBindingText(key) or key) .. ", left-click to ping instantly.")
+    else
+        window.hint:SetText("Hold " .. (GetBindingText(key) or key) .. ", left-click, flick, release.")
+    end
 end
 
 function ns.RefreshPage()

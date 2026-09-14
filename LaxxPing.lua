@@ -131,10 +131,18 @@ local DEFAULTS = {
     -- The whole point of the addon, but switchable: off sends ordinary pings
     -- that obey the pingTarget setting and can land on units.
     environmentOnly = true,
+    -- No wheel at all: the opening click IS the ping. The plain contextual
+    -- ping fires on the mouse-DOWN edge, so there is no gesture, no release
+    -- to wait for, and no drift budget -- the ping lands exactly under the
+    -- click. Every wheel-only setting is ignored while this is on.
+    instantPing = false,
     enabledTypes = {
         attack = true, warning = true, onmyway = true,
         assist = true, nonthreat = true, threat = false,
     },
+    -- Wheel order, top entry first and then clockwise. A list of keys rather
+    -- than a rank per type, so a reorder is one remove and one insert.
+    order = { "attack", "warning", "onmyway", "assist", "nonthreat", "threat" },
 }
 ns.DEFAULTS = DEFAULTS
 
@@ -151,8 +159,47 @@ local function MergeDefaults(dst, src)
     end
 end
 
+-- The saved order is only trusted after this: a type added in a later
+-- version is appended, a key that no longer exists is dropped, and a
+-- duplicate (from a half-written DB) is kept once. Order and enabledTypes are
+-- deliberately separate, so turning a ping off does not forget where it sat.
+local function NormalizeOrder()
+    local known, seen, out = {}, {}, {}
+    for _, t in ipairs(ns.PING_TYPES) do known[t.key] = true end
+    for _, key in ipairs(db.order) do
+        if known[key] and not seen[key] then
+            seen[key] = true
+            out[#out + 1] = key
+        end
+    end
+    for _, t in ipairs(ns.PING_TYPES) do
+        if not seen[t.key] then out[#out + 1] = t.key end
+    end
+    db.order = out
+end
+
 function ns.DB()
     return db
+end
+
+-- The ping types in the user's wheel order, as definitions.
+function ns.OrderedTypes()
+    local byKey = {}
+    for _, t in ipairs(ns.PING_TYPES) do byKey[t.key] = t end
+    local out = {}
+    for _, key in ipairs(db.order) do out[#out + 1] = byKey[key] end
+    return out
+end
+
+-- Move the type at position `from` to position `to`, both 1-based in the
+-- current order. Anything else that depends on the order is refreshed by the
+-- caller, since a drag produces many of these before it settles.
+function ns.MoveType(from, to)
+    local n = #db.order
+    if from < 1 or from > n or to < 1 or to > n or from == to then return false end
+    local key = table.remove(db.order, from)
+    table.insert(db.order, to, key)
+    return true
 end
 
 -------------------------------------------------------------------------------
@@ -231,7 +278,7 @@ local entries = {}
 
 local function RebuildEntries()
     wipe(entries)
-    for _, t in ipairs(ns.PING_TYPES) do
+    for _, t in ipairs(ns.OrderedTypes()) do
         if db.enabledTypes[t.key] then
             entries[#entries + 1] = t
         end
@@ -495,7 +542,18 @@ local SNIPPET_CLICK = [==[
         return nil, 1
     end
 
+    local instant = self:GetAttribute("lpInstant")
+
     if down then
+        -- Instant mode: the down edge is the whole gesture. useOnKeyDown is
+        -- true in this mode (set by Push), so the action written here fires
+        -- as soon as this pre-body returns, with the cursor exactly where it
+        -- was clicked. Nothing is opened, so nothing has to be closed.
+        if instant then
+            self:SetAttribute("type", "macro")
+            self:SetAttribute("macrotext", self:GetAttribute("lpCmdPlain"))
+            return nil, 1
+        end
         -- The origin every release measures against, and where the wheel is
         -- drawn. Captured here rather than at the hold, so the wheel opens
         -- where the player clicked rather than where they happened to be
@@ -508,6 +566,18 @@ local SNIPPET_CLICK = [==[
     end
 
     self:SetAttribute("lpOpen", nil)
+
+    -- Instant mode already pinged on the way down; the up edge must not send
+    -- a second one. The deferred hold-key teardown still has to run, though.
+    if instant then
+        self:SetAttribute("type", nil)
+        if self:GetAttribute("lpReleasePending") then
+            self:SetAttribute("lpReleasePending", nil)
+            local claim = self:GetFrameRef("claimer")
+            if claim then claim:ClearBindings() end
+        end
+        return nil, 1
+    end
 
     local ox = tonumber(self:GetAttribute("lpOX"))
     local oy = tonumber(self:GetAttribute("lpOY"))
@@ -558,6 +628,7 @@ SNIPPET_CLICK = SNIPPET_CLICK:gsub("__TOKEN__", CLICK_TOKEN)
 
 local function OnClickPost(self, button, down)
     if button ~= CLICK_TOKEN then return end
+    if db.instantPing then HideWheel() return end
     if down then ShowWheel() else HideWheel() end
 end
 
@@ -617,6 +688,12 @@ local function Push()
     RebuildEntries()
 
     holdBtn:SetAttribute("lpOpenKey", OPEN_KEY)
+    -- Which edge acts. The wheel fires on release, because the flick has to
+    -- happen first; instant mode fires on the press, because there is nothing
+    -- to wait for. Read by SecureActionButton_OnClick after the snippet runs,
+    -- so the snippet's down-edge action in instant mode is honoured.
+    clickBtn:SetAttribute("useOnKeyDown", db.instantPing and true or false)
+    clickBtn:SetAttribute("lpInstant", db.instantPing and 1 or nil)
     clickBtn:SetAttribute("lpN", #entries)
     clickBtn:SetAttribute("lpDeadZone", db.deadZone)
     clickBtn:SetAttribute("lpPlain", db.plainOnNoMove and 1 or nil)
@@ -715,6 +792,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         MergeDefaults(LaxxPingDB, DEFAULTS)
         db = LaxxPingDB
         ns.db = db
+        NormalizeOrder()
 
     elseif event == "PLAYER_LOGIN" then
         RefreshPhysical()
