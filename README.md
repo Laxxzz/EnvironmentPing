@@ -17,7 +17,7 @@ you change your mind halfway through a gesture.
 ## Using it
 
 1. Bind **Ping Wheel** under Key Bindings → EnvironmentPing, or set it from the addon's own options.
-2. `/environmentping` (or `/eping`, or the addon compartment) opens the options window.
+2. `/ep` (or `/eping`, or the addon compartment) opens the options window.
 3. Hold the key. Left-click where you want the ping. Flick toward an icon. Release.
 
 Release without flicking and a plain ping lands exactly where you clicked — the only gesture
