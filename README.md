@@ -1,4 +1,4 @@
-# Environment Ping
+# EnvironmentPing
 
 Hold a key, left-click where you want to ping, flick toward an icon, release.
 
@@ -10,13 +10,13 @@ the tank.
 ## Why it exists
 
 12.1.0 added a Ping Target setting and a keybind to toggle it, but toggling is modal: you are
-either pinging units or you are not, and you have to remember which. Environment Ping makes it
+either pinging units or you are not, and you have to remember which. EnvironmentPing makes it
 per-ping instead. Nothing is toggled, no CVar is written, and there is no state to restore if
 you change your mind halfway through a gesture.
 
 ## Using it
 
-1. Bind **Ping Wheel** under Key Bindings → Environment Ping, or set it from the addon's own options.
+1. Bind **Ping Wheel** under Key Bindings → EnvironmentPing, or set it from the addon's own options.
 2. `/environmentping` (or `/eping`, or the addon compartment) opens the options window.
 3. Hold the key. Left-click where you want the ping. Flick toward an icon. Release.
 

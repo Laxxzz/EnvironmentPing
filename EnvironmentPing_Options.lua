@@ -251,7 +251,7 @@ function W.Keybind(parent, y, index, text, tip)
     -- already be half-applied by then, so nothing is touched until combat ends.
     local function Commit(chord)
         if InCombatLockdown() then
-            UIErrorsFrame:AddMessage("Environment Ping: keybinds can't be changed in combat.", 1, 0.3, 0.3)
+            UIErrorsFrame:AddMessage("EnvironmentPing: keybinds can't be changed in combat.", 1, 0.3, 0.3)
             return
         end
 
@@ -267,7 +267,7 @@ function W.Keybind(parent, y, index, text, tip)
             -- out later that something else stopped working.
             local stolenFrom = GetBindingAction(chord)
             if stolenFrom and stolenFrom ~= "" and stolenFrom ~= "ENVIRONMENTPING_HOLD" then
-                UIErrorsFrame:AddMessage("Environment Ping: took " .. (GetBindingText(chord) or chord)
+                UIErrorsFrame:AddMessage("EnvironmentPing: took " .. (GetBindingText(chord) or chord)
                     .. " from " .. (GetBindingName(stolenFrom) or stolenFrom) .. ".", 1, 0.82, 0)
             end
             SetBinding(chord, "ENVIRONMENTPING_HOLD")
@@ -286,7 +286,7 @@ function W.Keybind(parent, y, index, text, tip)
             return
         end
         if InCombatLockdown() then
-            UIErrorsFrame:AddMessage("Environment Ping: keybinds can't be changed in combat.", 1, 0.3, 0.3)
+            UIErrorsFrame:AddMessage("EnvironmentPing: keybinds can't be changed in combat.", 1, 0.3, 0.3)
             return
         end
         listening = true
@@ -473,7 +473,7 @@ function W.PingRow(parent, y, index, def)
                 if db.enabledTypes[t.key] then count = count + 1 end
             end
             if count <= 1 then
-                UIErrorsFrame:AddMessage("Environment Ping: the wheel needs at least one ping.", 1, 0.3, 0.3)
+                UIErrorsFrame:AddMessage("EnvironmentPing: the wheel needs at least one ping.", 1, 0.3, 0.3)
                 return
             end
         end
@@ -630,7 +630,7 @@ local function BuildWindow()
     local title = FS(bar, FS_TITLE, TEXT)
     title:SetPoint("LEFT", bar, "LEFT", PAD, 0)
     title:SetPoint("RIGHT", close, "LEFT", -LABEL_GAP, 0)
-    title:SetText("Environment Ping")
+    title:SetText("EnvironmentPing")
 
     f.bar = bar
     f.barRule = barRule

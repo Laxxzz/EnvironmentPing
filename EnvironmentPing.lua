@@ -722,7 +722,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         ns.Refresh()
         C_Timer.NewTicker(0.03, Tick)
         if not GetBindingKey("ENVIRONMENTPING_HOLD") then
-            print("|cff4a8ceaEnvironment Ping|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/environmentping|r for options.")
+            print("|cff4a8ceaEnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/environmentping|r for options.")
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -740,7 +740,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
 end)
 
-_G.BINDING_HEADER_ENVIRONMENTPING = "Environment Ping"
+_G.BINDING_HEADER_ENVIRONMENTPING = "EnvironmentPing"
 _G.BINDING_NAME_ENVIRONMENTPING_HOLD = "Ping Wheel (hold, then left-click)"
 
 SLASH_ENVIRONMENTPING1 = "/environmentping"
