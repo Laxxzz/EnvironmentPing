@@ -17,7 +17,7 @@ you change your mind halfway through a gesture.
 ## Using it
 
 1. Bind **Ping Wheel** under Key Bindings → EnvironmentPing, or set it from the addon's own options.
-2. `/environmentping` (or `/eping`, or the addon compartment) opens the options window.
+2. `/ep` (or `/eping`, or the addon compartment) opens the options window.
 3. Hold the key. Left-click where you want the ping. Flick toward an icon. Release.
 
 Release without flicking and a plain ping lands exactly where you clicked — the only gesture
@@ -66,6 +66,15 @@ Two constraints shaped the design:
   namespace is `SecureOnly`. `Input.SetCursorPosition` would let the pointer be put back, but it
   is `RequiresLimitedInput` — gamepad hardware events only. So the dead zone *is* the accuracy
   budget, which is why it is small, visible while the wheel is open, and user-settable.
+
+## Installing
+
+Download the latest `EnvironmentPing-<version>.zip` from
+[Releases](https://github.com/Laxxzz/EnvironmentPing/releases) and extract it into
+`World of Warcraft\_retail_\Interface\AddOns`. You should end up with an `EnvironmentPing`
+folder containing `EnvironmentPing.toc`. `build.ps1` produces the same zip from a checkout.
+
+Source: <https://github.com/Laxxzz/EnvironmentPing>
 
 ## Requirements
 
