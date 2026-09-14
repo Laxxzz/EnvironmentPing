@@ -1,3 +1,3 @@
 <Bindings>
-	<Binding name="LAXXPING_HOLD" header="LAXXPING" category="LaxxPing" />
+	<Binding name="ENVIRONMENTPING_HOLD" header="ENVIRONMENTPING" category="Environment Ping" />
 </Bindings>

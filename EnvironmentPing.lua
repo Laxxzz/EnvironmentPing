@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
---  LaxxPing.lua -- hold a key, left-click to open a ping wheel at the cursor,
+--  EnvironmentPing.lua -- hold a key, left-click to open a ping wheel at the cursor,
 --  flick toward an entry, release to send.
 --
 --  HOW IT WORKS, and why it is shaped this way. Every claim below was measured
@@ -71,7 +71,7 @@ ns.PING_TYPES = {
 }
 
 -- One accent, one hue. Everything else the addon draws is white or black at an
--- alpha -- see LaxxPing_Options.lua.
+-- alpha -- see EnvironmentPing_Options.lua.
 ns.ACCENT = { 0.28, 0.55, 0.92 }
 
 ns.MIN_DEAD_ZONE, ns.MAX_DEAD_ZONE = 4, 48
@@ -578,17 +578,17 @@ end
 
 local function BuildSecure()
     if holdBtn then return end
-    header = CreateFrame("Frame", "LaxxPingHeader", UIParent, "SecureHandlerBaseTemplate")
+    header = CreateFrame("Frame", "EnvironmentPingHeader", UIParent, "SecureHandlerBaseTemplate")
 
     -- Protected by inheritance from SecureFrameTemplate, which is what lets the
     -- snippet take its handle in combat: GetHandleFrame refuses a handle to an
     -- unprotected frame once the player is fighting. Also the binding OWNER, so
     -- one ClearBindings hands everything back at once.
-    claimer = CreateFrame("Frame", "LaxxPingClaimer", UIParent, "SecureHandlerBaseTemplate")
+    claimer = CreateFrame("Frame", "EnvironmentPingClaimer", UIParent, "SecureHandlerBaseTemplate")
     claimer:Hide()
 
-    holdBtn = MakeSecureButton("LaxxPingHoldButton", nil)
-    clickBtn = MakeSecureButton("LaxxPingClickButton", OnClickPost)
+    holdBtn = MakeSecureButton("EnvironmentPingHoldButton", nil)
+    clickBtn = MakeSecureButton("EnvironmentPingClickButton", OnClickPost)
 
     SecureHandlerSetFrameRef(holdBtn, "claimer", claimer)
     SecureHandlerSetFrameRef(holdBtn, "clickbtn", clickBtn)
@@ -641,14 +641,14 @@ local function ApplyBindings()
     if InCombatLockdown() then pushPending = true return end
     BuildSecure()
     if not bindOwner then
-        bindOwner = CreateFrame("Frame", "LaxxPingBindOwner", UIParent)
+        bindOwner = CreateFrame("Frame", "EnvironmentPingBindOwner", UIParent)
     end
     ClearOverrideBindings(bindOwner)
     if not db.enabled then return end
-    for i = 1, select("#", GetBindingKey("LAXXPING_HOLD")) do
-        local key = select(i, GetBindingKey("LAXXPING_HOLD"))
+    for i = 1, select("#", GetBindingKey("ENVIRONMENTPING_HOLD")) do
+        local key = select(i, GetBindingKey("ENVIRONMENTPING_HOLD"))
         if key then
-            SetOverrideBindingClick(bindOwner, true, key, "LaxxPingHoldButton")
+            SetOverrideBindingClick(bindOwner, true, key, "EnvironmentPingHoldButton")
         end
     end
 end
@@ -685,7 +685,7 @@ local function Tick()
     -- binding is unrestricted, so this works in combat; the clear itself is
     -- protected, so it waits for a quiet moment.
     local held = GetBindingAction(OPEN_KEY)
-    if held and held ~= "" and held:find("LaxxPingClickButton", 1, true) then
+    if held and held ~= "" and held:find("EnvironmentPingClickButton", 1, true) then
         claimSince = claimSince or GetTime()
         if (GetTime() - claimSince) > STUCK_SECONDS and not InCombatLockdown() then
             ClearOverrideBindings(claimer)
@@ -711,9 +711,9 @@ f:RegisterEvent("UI_SCALE_CHANGED")
 f:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 ~= ADDON_NAME then return end
-        LaxxPingDB = LaxxPingDB or {}
-        MergeDefaults(LaxxPingDB, DEFAULTS)
-        db = LaxxPingDB
+        EnvironmentPingDB = EnvironmentPingDB or {}
+        MergeDefaults(EnvironmentPingDB, DEFAULTS)
+        db = EnvironmentPingDB
         ns.db = db
 
     elseif event == "PLAYER_LOGIN" then
@@ -721,8 +721,8 @@ f:SetScript("OnEvent", function(_, event, arg1)
         wheel = BuildWheel()
         ns.Refresh()
         C_Timer.NewTicker(0.03, Tick)
-        if not GetBindingKey("LAXXPING_HOLD") then
-            print("|cff4a8ceaLaxxPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/laxxping|r for options.")
+        if not GetBindingKey("ENVIRONMENTPING_HOLD") then
+            print("|cff4a8ceaEnvironment Ping|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/environmentping|r for options.")
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -740,15 +740,15 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
 end)
 
-_G.BINDING_HEADER_LAXXPING = "LaxxPing"
-_G.BINDING_NAME_LAXXPING_HOLD = "Ping Wheel (hold, then left-click)"
+_G.BINDING_HEADER_ENVIRONMENTPING = "Environment Ping"
+_G.BINDING_NAME_ENVIRONMENTPING_HOLD = "Ping Wheel (hold, then left-click)"
 
-SLASH_LAXXPING1 = "/laxxping"
-SLASH_LAXXPING2 = "/lping"
-SlashCmdList["LAXXPING"] = function()
+SLASH_ENVIRONMENTPING1 = "/environmentping"
+SLASH_ENVIRONMENTPING2 = "/eping"
+SlashCmdList["ENVIRONMENTPING"] = function()
     if ns.ToggleOptions then ns.ToggleOptions() end
 end
 
-function _G.LaxxPing_OnCompartmentClick()
+function _G.EnvironmentPing_OnCompartmentClick()
     if ns.ToggleOptions then ns.ToggleOptions() end
 end

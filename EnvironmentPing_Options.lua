@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
---  LaxxPing_Options.lua -- the options window.
+--  EnvironmentPing_Options.lua -- the options window.
 --
 --  Built as a FIXED DESIGN CANVAS: the window is sized in physical pixels and
 --  its scale is set so one design unit maps to one physical pixel. That is why
@@ -229,7 +229,7 @@ function W.Keybind(parent, y, index, text, tip)
             ns.UpdateBorder(border, 1, a[1], a[2], a[3], 0.9)
             return
         end
-        local key = GetBindingKey("LAXXPING_HOLD")
+        local key = GetBindingKey("ENVIRONMENTPING_HOLD")
         if key then
             keyText:SetText(GetBindingText(key) or key)
             keyText:SetTextColor(TEXT[1], TEXT[2], TEXT[3], 1)
@@ -251,14 +251,14 @@ function W.Keybind(parent, y, index, text, tip)
     -- already be half-applied by then, so nothing is touched until combat ends.
     local function Commit(chord)
         if InCombatLockdown() then
-            UIErrorsFrame:AddMessage("LaxxPing: keybinds can't be changed in combat.", 1, 0.3, 0.3)
+            UIErrorsFrame:AddMessage("Environment Ping: keybinds can't be changed in combat.", 1, 0.3, 0.3)
             return
         end
 
         -- Clear every key currently held, which is what rebinding means -- but
         -- collect them FIRST: SetBinding mutates what GetBindingKey returns,
         -- and clearing while iterating it drops the second key.
-        local held = { GetBindingKey("LAXXPING_HOLD") }
+        local held = { GetBindingKey("ENVIRONMENTPING_HOLD") }
         for _, k in ipairs(held) do SetBinding(k, nil) end
 
         if chord then
@@ -266,11 +266,11 @@ function W.Keybind(parent, y, index, text, tip)
             -- asking, so say whose it was rather than letting the user find
             -- out later that something else stopped working.
             local stolenFrom = GetBindingAction(chord)
-            if stolenFrom and stolenFrom ~= "" and stolenFrom ~= "LAXXPING_HOLD" then
-                UIErrorsFrame:AddMessage("LaxxPing: took " .. (GetBindingText(chord) or chord)
+            if stolenFrom and stolenFrom ~= "" and stolenFrom ~= "ENVIRONMENTPING_HOLD" then
+                UIErrorsFrame:AddMessage("Environment Ping: took " .. (GetBindingText(chord) or chord)
                     .. " from " .. (GetBindingName(stolenFrom) or stolenFrom) .. ".", 1, 0.82, 0)
             end
-            SetBinding(chord, "LAXXPING_HOLD")
+            SetBinding(chord, "ENVIRONMENTPING_HOLD")
         end
 
         SaveBindings(GetCurrentBindingSet())
@@ -286,7 +286,7 @@ function W.Keybind(parent, y, index, text, tip)
             return
         end
         if InCombatLockdown() then
-            UIErrorsFrame:AddMessage("LaxxPing: keybinds can't be changed in combat.", 1, 0.3, 0.3)
+            UIErrorsFrame:AddMessage("Environment Ping: keybinds can't be changed in combat.", 1, 0.3, 0.3)
             return
         end
         listening = true
@@ -473,7 +473,7 @@ function W.PingRow(parent, y, index, def)
                 if db.enabledTypes[t.key] then count = count + 1 end
             end
             if count <= 1 then
-                UIErrorsFrame:AddMessage("LaxxPing: the wheel needs at least one ping.", 1, 0.3, 0.3)
+                UIErrorsFrame:AddMessage("Environment Ping: the wheel needs at least one ping.", 1, 0.3, 0.3)
                 return
             end
         end
@@ -590,7 +590,7 @@ local function CanvasScale()
 end
 
 local function BuildWindow()
-    local f = CreateFrame("Frame", "LaxxPingOptions", UIParent)
+    local f = CreateFrame("Frame", "EnvironmentPingOptions", UIParent)
     f:SetFrameStrata("HIGH")
     f:SetWidth(DESIGN_W)
     f:SetPoint("CENTER")
@@ -630,7 +630,7 @@ local function BuildWindow()
     local title = FS(bar, FS_TITLE, TEXT)
     title:SetPoint("LEFT", bar, "LEFT", PAD, 0)
     title:SetPoint("RIGHT", close, "LEFT", -LABEL_GAP, 0)
-    title:SetText("LaxxPing")
+    title:SetText("Environment Ping")
 
     f.bar = bar
     f.barRule = barRule
@@ -662,7 +662,7 @@ end
 -- gates another one is never left showing a stale state.
 local function RefreshHint()
     if not window then return end
-    local key = GetBindingKey("LAXXPING_HOLD")
+    local key = GetBindingKey("ENVIRONMENTPING_HOLD")
     window.hint:SetText(key
         and ("Hold " .. (GetBindingText(key) or key) .. ", left-click, flick, release.")
         or "|cffff5555No key bound|r -- set one above.")
@@ -685,7 +685,7 @@ function ns.ToggleOptions()
         window:SetHeight(TITLE_H + h + 14)
         -- One proxy in UISpecialFrames, so Escape closes this the way it closes
         -- every other window rather than needing a key handler of its own.
-        tinsert(UISpecialFrames, "LaxxPingOptions")
+        tinsert(UISpecialFrames, "EnvironmentPingOptions")
     end
     window:SetShown(not window:IsShown())
 end
