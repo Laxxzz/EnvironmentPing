@@ -66,6 +66,15 @@ Two constraints shaped the design:
   is `RequiresLimitedInput` — gamepad hardware events only. So the dead zone *is* the accuracy
   budget, which is why it is small, visible while the wheel is open, and user-settable.
 
+## Installing
+
+Download the latest `EnvironmentPing-<version>.zip` from
+[Releases](https://github.com/Laxxzz/EnvironmentPing/releases) and extract it into
+`World of Warcraft\_retail_\Interface\AddOns`. You should end up with an `EnvironmentPing`
+folder containing `EnvironmentPing.toc`. `build.ps1` produces the same zip from a checkout.
+
+Source: <https://github.com/Laxxzz/EnvironmentPing>
+
 ## Requirements
 
 Retail 12.1.0 or later. No dependencies.
