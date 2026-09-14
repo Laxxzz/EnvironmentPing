@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Package LaxxPing into a distributable zip.
+    Package EnvironmentPing into a distributable zip.
 
 .DESCRIPTION
-    Produces dist\LaxxPing-<version>.zip containing a single top-level
-    LaxxPing\ folder, which is the layout a user can extract straight into
+    Produces dist\EnvironmentPing-<version>.zip containing a single top-level
+    EnvironmentPing\ folder, which is the layout a user can extract straight into
     Interface\AddOns.
 
     The version is read from the .toc rather than passed in, so the zip name
@@ -20,9 +20,9 @@ param(
     # Files that belong in the shipped addon. Anything not named here is not
     # in the build, which is the safe direction for a list to be wrong in.
     [string[]]$Include = @(
-        "LaxxPing.toc",
-        "LaxxPing.lua",
-        "LaxxPing_Options.lua",
+        "EnvironmentPing.toc",
+        "EnvironmentPing.lua",
+        "EnvironmentPing_Options.lua",
         "Bindings.xml",
         "README.md",
         "LICENSE"
@@ -31,7 +31,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$name = "LaxxPing"
+$name = "EnvironmentPing"
 
 $tocPath = Join-Path $root "$name.toc"
 if (-not (Test-Path $tocPath)) { throw "No $name.toc beside this script." }
@@ -64,7 +64,7 @@ if (Test-Path $zip) { Remove-Item $zip -Force }
 # Both of those write entry paths with BACKSLASHES on Windows PowerShell 5.1
 # (.NET Framework; fixed only in .NET Core). The zip spec requires forward
 # slashes, so a strict extractor produces a single file literally named
-# "LaxxPing\LaxxPing.lua" rather than a folder, and the addon does not load.
+# "EnvironmentPing\EnvironmentPing.lua" rather than a folder, and the addon does not load.
 # Windows' own extractor tolerates it, which is exactly why this ships broken
 # and is reported later by somebody on another tool.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
