@@ -70,9 +70,10 @@ ns.PING_TYPES = {
     { key = "threat",    num = 6, atlas = "Ping_Marker_Icon_Threat",    name = PING_TYPE_THREAT    or "Threat" },
 }
 
--- One accent, one hue. Everything else the addon draws is white or black at an
--- alpha -- see EnvironmentPing_Options.lua.
-ns.ACCENT = { 0.28, 0.55, 0.92 }
+-- One accent, one hue: #2FA88A teal-green, the same value as the options
+-- window's accent (EnvironmentPingStyle.lua). Everything else the addon draws is
+-- white or black at an alpha.
+ns.ACCENT = { 0.184, 0.659, 0.541 }
 
 ns.MIN_DEAD_ZONE, ns.MAX_DEAD_ZONE = 4, 48
 ns.MIN_RADIUS, ns.MAX_RADIUS = 60, 200
@@ -211,22 +212,13 @@ end
 --  or nil during a display-mode change, and dividing by that makes every
 --  snapped size NaN long after the change that caused it.
 -------------------------------------------------------------------------------
-local perfect, physH
-
-local function RefreshPhysical()
-    local _, h = GetPhysicalScreenSize()
-    if h and h > 0 then physH = h
-    elseif not physH then physH = 1080 end
-    perfect = 768 / physH
-end
-RefreshPhysical()
+--  The measurement itself lives in EnvironmentPingPixel.lua, which keeps the last
+--  good height the same way; these are the names the wheel code already uses.
+local P = ns.Pixel
+local RefreshPhysical = P.Recompute
 ns.RefreshPhysical = RefreshPhysical
 
-local function OnePixel(frame)
-    local s = frame and frame:GetEffectiveScale() or 1
-    if s <= 0 then s = 1 end
-    return perfect / s
-end
+local OnePixel = P.OnePixel
 ns.OnePixel = OnePixel
 
 -- Four flat strips in a container of their own, not BackdropTemplate: an
@@ -241,8 +233,7 @@ local function CreateBorder(host, level)
     local function edge(p1, p2)
         local t = c:CreateTexture(nil, "OVERLAY")
         t:SetColorTexture(1, 1, 1, 1)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
+        P.Edge(t)
         t:SetPoint(p1)
         t:SetPoint(p2)
         c.edges[#c.edges + 1] = t
@@ -804,7 +795,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         ns.Refresh()
         C_Timer.NewTicker(0.03, Tick)
         if not GetBindingKey("ENVIRONMENTPING_HOLD") then
-            print("|cff4a8ceaEnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
+            print("|cff2fa88aEnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then

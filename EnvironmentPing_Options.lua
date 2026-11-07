@@ -1,13 +1,10 @@
 -------------------------------------------------------------------------------
 --  EnvironmentPing_Options.lua -- the options window.
 --
---  Built as a FIXED DESIGN CANVAS: the window is sized in physical pixels and
---  its scale is set so one design unit maps to one physical pixel. That is why
---  every number in here is a round one -- they are pixel counts, not values
---  that happened to look right at one resolution. The scale is set exactly
---  once, by the window itself; nothing inside it sets a scale, because scale
---  compounds and a child that re-applies the canvas factor renders at the
---  square of it.
+--  Built on EnvironmentPingStyle.lua (palette, fonts, widgets) and
+--  EnvironmentPingPixel.lua (the physical pixel grid). The window lives at the
+--  user's normal UI scale; every size and offset is snapped to a physical pixel
+--  and re-snapped when the scale changes (see Layout below).
 --
 --  Two rules do the heavy lifting and are worth stating before the code:
 --
@@ -22,81 +19,70 @@
 --      turns a long localized string into an overlap.
 --
 --  Colour is white or black at an alpha over a near-black ground with a slight
---  blue cast, plus exactly ONE accent -- the same blue the wheel's emblem uses.
+--  teal cast, plus exactly ONE accent -- the same teal-green the wheel uses.
 --  Nothing else has a hue, which is what makes the accent mean "on" rather
---  than "decorated", and what lets the whole panel retint from one table.
+--  than "decorated".
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
 
--------------------------------------------------------------------------------
---  Scales. Eight spacing numbers and six type steps, all named.
--------------------------------------------------------------------------------
-local DESIGN_W = 400
+local S = ns.Style
+local P = ns.Pixel
+local size = S.size
+local Unpack = S.Unpack
 
-local PAD = 20          -- page edge -> row edge
-local ROW_H = 38        -- an option row
-local COMPACT_H = 32    -- a ping row: icon plus a name, nothing else
-local TITLE_H = 42
-local SECTION_H = 30
-local LABEL_GAP = 12    -- label right bound -> control left
-local CTRL_H = 20       -- toggle track height
-local STEP_BTN = 22
+local PAD = size.PAD
+local ROW_H = size.ROW_H
+local COMPACT_H = size.ROW_H_SM
+local SECTION_H = 28
+local LABEL_GAP = size.GAP
+local WINDOW_W = 380
+local HINT_H = 24           -- the strip under the page that holds the hint line
 
-local FS_CAPTION, FS_SMALL, FS_SECTION = 10, 11, 12
-local FS_CONTROL, FS_BODY, FS_TITLE = 13, 14, 16
-
-local PANEL_BG = { 0.05, 0.07, 0.09 }
-local CTRL_BG = { 0.061, 0.095, 0.120 }
-local BORDER = { 1, 1, 1, 0.05 }
-local TEXT = { 1, 1, 1, 1.00 }
-local TEXT_DIM = { 1, 1, 1, 0.53 }
-local TEXT_SEC = { 1, 1, 1, 0.41 }
-local DIVIDER = { 1, 1, 1, 0.06 }
-local ROW_ODD = { 0, 0, 0, 0.10 }
-local ROW_EVEN = { 0, 0, 0, 0.20 }
-local TRACK_OFF = { 0.27, 0.27, 0.27, 0.65 }
-
-local FONT_FACE = GameFontNormal:GetFont()
+local TEXT_SEC = S.color.textFaint
 
 local window, content
+
+-------------------------------------------------------------------------------
+--  Layout. Everything positioned here is positioned by a function that can be
+--  run again: it is applied now and again whenever the UI scale changes, so a
+--  size that was snapped to one scale's pixel grid is never left on another's.
+-------------------------------------------------------------------------------
+local function Layout(fn)
+    fn()
+    P.OnRescale(fn)
+end
 
 -------------------------------------------------------------------------------
 --  Small shared helpers
 -------------------------------------------------------------------------------
 
--- A FontString bounded on BOTH sides. The two anchors and the wrap-off are the
--- whole point: a string anchored on one side only is free to grow into its
--- neighbour the first time a locale hands it a longer word.
-local function FS(parent, size, colour, justify)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(FONT_FACE, size, "")
-    fs:SetShadowColor(0, 0, 0, 1)
-    fs:SetShadowOffset(1, -1)
-    fs:SetTextColor(colour[1], colour[2], colour[3], colour[4] or 1)
-    fs:SetJustifyH(justify or "LEFT")
-    fs:SetWordWrap(false)
-    return fs
-end
-
-local function Fill(parent, colour, layer)
-    local t = parent:CreateTexture(nil, layer or "BACKGROUND")
-    t:SetColorTexture(colour[1], colour[2], colour[3], colour[4] or 1)
-    t:SetAllPoints(parent)
-    return t
-end
-
--- The row shell every option row shares: full width between the page's pads,
--- a stripe so a long list stays readable, and a label bounded short of
--- whatever control the caller puts on the right.
+-- The row shell every option row shares: full width between the page's pads and
+-- a stripe so a long list stays readable.
 local function Row(parent, y, height, index)
     local r = CreateFrame("Frame", nil, parent)
-    r:SetHeight(height)
-    r:SetPoint("TOPLEFT", parent, "TOPLEFT", PAD, y)
-    r:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PAD, y)
-    local stripe = (index and index % 2 == 0) and ROW_EVEN or ROW_ODD
-    Fill(r, stripe)
+    Layout(function()
+        r:ClearAllPoints()
+        P.Size(r, nil, height)
+        P.Point(r, "TOPLEFT", parent, "TOPLEFT", PAD, y)
+        P.Point(r, "TOPRIGHT", parent, "TOPRIGHT", -PAD, y)
+    end)
+    local stripe = (index and index % 2 == 0) and S.color.rowEven or S.color.rowOdd
+    S.Fill(r, stripe)
     return r
+end
+
+-- A row's label: bounded on the left by the row's pad and on the right by the
+-- control the caller names.
+local function RowLabel(r, text, rightOf)
+    local label = S.Label(r, S.fontBody, "LEFT")
+    Layout(function()
+        label:ClearAllPoints()
+        P.Point(label, "LEFT", r, "LEFT", size.ROW_PAD, 0)
+        P.Point(label, "RIGHT", rightOf, "LEFT", -LABEL_GAP, 0)
+    end)
+    label:SetText(text)
+    return label
 end
 
 local function Tooltip(frame, title, body)
@@ -121,58 +107,32 @@ end
 
 function W.Section(parent, y, text)
     local r = CreateFrame("Frame", nil, parent)
-    r:SetHeight(SECTION_H)
-    r:SetPoint("TOPLEFT", parent, "TOPLEFT", PAD, y)
-    r:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PAD, y)
-
-    local label = FS(r, FS_SECTION, TEXT_SEC)
-    label:SetPoint("LEFT", r, "LEFT", 0, -2)
-    label:SetText(text:upper())
-
-    -- The rule finishes itself: it is anchored to the label on one side and to
-    -- the row on the other, so no call site has to complete the widget.
-    local rule = r:CreateTexture(nil, "ARTWORK")
-    rule:SetColorTexture(DIVIDER[1], DIVIDER[2], DIVIDER[3], DIVIDER[4])
-    rule:SetHeight(ns.OnePixel(r))
-    rule:SetPoint("LEFT", label, "RIGHT", LABEL_GAP, 0)
-    rule:SetPoint("RIGHT", r, "RIGHT", 0, 0)
-
+    Layout(function()
+        r:ClearAllPoints()
+        P.Size(r, nil, SECTION_H)
+        P.Point(r, "TOPLEFT", parent, "TOPLEFT", PAD, y)
+        P.Point(r, "TOPRIGHT", parent, "TOPRIGHT", -PAD, y)
+    end)
+    S.Heading(r, text)
     return r, SECTION_H
 end
 
 -- A toggle. Its "on" state is the only place the accent appears in a row,
--- which is what makes a page of settings scannable without reading it.
+-- which is what makes a page of settings scannable without reading it. The
+-- switch is only a picture of the state: the row owns the click.
 function W.Toggle(parent, y, index, text, tip, get, set)
     local r = Row(parent, y, ROW_H, index)
 
-    local track = CreateFrame("Frame", nil, r)
-    track:SetSize(36, CTRL_H)
-    track:SetPoint("RIGHT", r, "RIGHT", -PAD * 0.5, 0)
-    local trackFill = Fill(track, TRACK_OFF, "ARTWORK")
+    local switch = S.Switch(r)
+    Layout(function()
+        switch:ClearAllPoints()
+        P.Point(switch, "RIGHT", r, "RIGHT", -size.ROW_PAD, 0)
+    end)
 
-    local knob = track:CreateTexture(nil, "OVERLAY")
-    knob:SetColorTexture(1, 1, 1, 1)
-    knob:SetSize(CTRL_H - 6, CTRL_H - 6)
-
-    local label = FS(r, FS_BODY, TEXT)
-    label:SetPoint("LEFT", r, "LEFT", PAD * 0.5, 0)
-    label:SetPoint("RIGHT", track, "LEFT", -LABEL_GAP, 0)
-    label:SetText(text)
+    RowLabel(r, text, switch)
 
     local function Paint()
-        local on = get() and true or false
-        if on then
-            local a = ns.ACCENT
-            trackFill:SetColorTexture(a[1], a[2], a[3], 0.75)
-            knob:SetVertexColor(1, 1, 1, 1)
-            knob:ClearAllPoints()
-            knob:SetPoint("RIGHT", track, "RIGHT", -3, 0)
-        else
-            trackFill:SetColorTexture(TRACK_OFF[1], TRACK_OFF[2], TRACK_OFF[3], TRACK_OFF[4])
-            knob:SetVertexColor(1, 1, 1, 0.5)
-            knob:ClearAllPoints()
-            knob:SetPoint("LEFT", track, "LEFT", 3, 0)
-        end
+        switch:SetChecked(get())
     end
 
     -- The widget owns the control, so the widget owns its refresh. A caller
@@ -206,38 +166,30 @@ function W.Keybind(parent, y, index, text, tip)
     local r = Row(parent, y, ROW_H, index)
     local listening = false
 
-    local btn = CreateFrame("Button", nil, r)
-    btn:SetSize(130, 24)
-    btn:SetPoint("RIGHT", r, "RIGHT", -PAD * 0.5, 0)
+    local btn = S.Button(r, "", { width = size.BTN_W, height = size.BTN_H })
+    Layout(function()
+        btn:ClearAllPoints()
+        P.Point(btn, "RIGHT", r, "RIGHT", -size.ROW_PAD, 0)
+    end)
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    local bg = Fill(btn, CTRL_BG, "ARTWORK")
-    local border = ns.CreateBorder(btn, 1)
-    local keyText = FS(btn, FS_CONTROL, TEXT, "CENTER")
-    keyText:SetPoint("LEFT", btn, "LEFT", 6, 0)
-    keyText:SetPoint("RIGHT", btn, "RIGHT", -6, 0)
+    local keyText = btn.Label
 
-    local label = FS(r, FS_BODY, TEXT)
-    label:SetPoint("LEFT", r, "LEFT", PAD * 0.5, 0)
-    label:SetPoint("RIGHT", btn, "LEFT", -LABEL_GAP, 0)
-    label:SetText(text)
+    RowLabel(r, text, btn)
 
+    -- The button's own edge and ink carry the state: accent while listening.
     local function Paint()
+        btn:SetAccented(listening)
         if listening then
-            local a = ns.ACCENT
             keyText:SetText("Press a key...")
-            keyText:SetTextColor(a[1], a[2], a[3], 1)
-            ns.UpdateBorder(border, 1, a[1], a[2], a[3], 0.9)
             return
         end
         local key = GetBindingKey("ENVIRONMENTPING_HOLD")
         if key then
             keyText:SetText(GetBindingText(key) or key)
-            keyText:SetTextColor(TEXT[1], TEXT[2], TEXT[3], 1)
         else
             keyText:SetText("Not bound")
-            keyText:SetTextColor(TEXT_SEC[1], TEXT_SEC[2], TEXT_SEC[3], TEXT_SEC[4])
+            keyText:SetTextColor(Unpack(TEXT_SEC))
         end
-        ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.30)
     end
 
     local function StopListening()
@@ -312,8 +264,9 @@ function W.Keybind(parent, y, index, text, tip)
 
     -- Mouse buttons are legal binding keys too, but not the left one: the
     -- wheel claims BUTTON1 for itself the moment the hold key goes down, so a
-    -- hold key bound to it could never be released.
-    btn:SetScript("OnMouseDown", function(self, button)
+    -- hold key bound to it could never be released. HookScript, because the
+    -- button widget owns the press visual in OnMouseDown.
+    btn:HookScript("OnMouseDown", function(_, button)
         if not listening then return end
         if button == "LeftButton" or button == "RightButton" then
             StopListening()
@@ -323,19 +276,16 @@ function W.Keybind(parent, y, index, text, tip)
         StopListening()
     end)
 
-    btn:SetScript("OnEnter", function()
+    btn:HookScript("OnEnter", function()
         if listening then return end
-        ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.45)
         GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
         GameTooltip:AddLine(text, 1, 1, 1)
         GameTooltip:AddLine("Left-click, then press the key you want.\n"
             .. "Escape cancels. Right-click here to unbind.", 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
-    btn:SetScript("OnLeave", function()
+    btn:HookScript("OnLeave", function()
         GameTooltip:Hide()
-        if listening then return end
-        ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.30)
     end)
 
     Tooltip(r, text, tip)
@@ -352,51 +302,37 @@ function W.Stepper(parent, y, index, text, tip, get, set, minV, maxV, step, suff
     local r = Row(parent, y, ROW_H, index)
 
     local function Button(glyph, delta)
-        local b = CreateFrame("Button", nil, r)
-        b:SetSize(STEP_BTN, STEP_BTN)
-        local bg = Fill(b, CTRL_BG, "ARTWORK")
-        local border = ns.CreateBorder(b, 1)
-        ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.30)
-        local t = FS(b, FS_CONTROL, TEXT_DIM, "CENTER")
-        t:SetPoint("LEFT")
-        t:SetPoint("RIGHT")
-        t:SetText(glyph)
-        b:SetScript("OnEnter", function()
-            bg:SetColorTexture(CTRL_BG[1], CTRL_BG[2], CTRL_BG[3], 1)
-            ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.45)
-            t:SetTextColor(TEXT[1], TEXT[2], TEXT[3], 0.70)
-        end)
-        b:SetScript("OnLeave", function()
-            bg:SetColorTexture(CTRL_BG[1], CTRL_BG[2], CTRL_BG[3], 1)
-            ns.UpdateBorder(border, 1, BORDER[1], BORDER[2], BORDER[3], 0.30)
-            t:SetTextColor(TEXT_DIM[1], TEXT_DIM[2], TEXT_DIM[3], TEXT_DIM[4])
-        end)
+        local b = S.Button(r, glyph, { width = size.CTRL_H, height = size.CTRL_H })
         b.delta = delta
         return b
     end
 
     local plus = Button("+", step)
-    plus:SetPoint("RIGHT", r, "RIGHT", -PAD * 0.5, 0)
+    Layout(function()
+        plus:ClearAllPoints()
+        P.Point(plus, "RIGHT", r, "RIGHT", -size.ROW_PAD, 0)
+    end)
 
-    local value = FS(r, FS_CONTROL, TEXT, "CENTER")
-    value:SetWidth(52)
-    value:SetPoint("RIGHT", plus, "LEFT", -6, 0)
+    local value = S.Label(r, S.fontNum, "CENTER")
+    Layout(function()
+        value:ClearAllPoints()
+        P.Size(value, 52, nil)
+        P.Point(value, "RIGHT", plus, "LEFT", -6, 0)
+    end)
 
     local minus = Button("-", -step)
-    minus:SetPoint("RIGHT", value, "LEFT", -6, 0)
+    Layout(function()
+        minus:ClearAllPoints()
+        P.Point(minus, "RIGHT", value, "LEFT", -6, 0)
+    end)
 
-    local label = FS(r, FS_BODY, TEXT)
-    label:SetPoint("LEFT", r, "LEFT", PAD * 0.5, 0)
-    label:SetPoint("RIGHT", minus, "LEFT", -LABEL_GAP, 0)
-    label:SetText(text)
+    RowLabel(r, text, minus)
 
     local function Paint()
         value:SetText(tostring(get()) .. (suffix or ""))
         local v = get()
         minus:SetEnabled(v > minV)
         plus:SetEnabled(v < maxV)
-        minus:SetAlpha(v > minV and 1 or 0.35)
-        plus:SetAlpha(v < maxV and 1 or 0.35)
     end
 
     local function Bump(self)
@@ -480,44 +416,54 @@ function W.PingRow(parent, y, index, pos)
     r.pos = pos
 
     -- The accent frame that marks the row being dragged. Off until then.
-    local outline = ns.CreateBorder(r, 2)
-    outline:Hide()
+    local outline = S.Border(r, { S.color.accent[1], S.color.accent[2], S.color.accent[3], 0.9 },
+        "OVERLAY", 2)
+    outline:SetShown(false)
 
-    local track = CreateFrame("Frame", nil, r)
-    track:SetSize(36, CTRL_H)
-    track:SetPoint("RIGHT", r, "RIGHT", -PAD * 0.5, 0)
-    local trackFill = Fill(track, TRACK_OFF, "ARTWORK")
-
-    local knob = track:CreateTexture(nil, "OVERLAY")
-    knob:SetColorTexture(1, 1, 1, 1)
-    knob:SetSize(CTRL_H - 6, CTRL_H - 6)
+    local switch = S.Switch(r)
+    Layout(function()
+        switch:ClearAllPoints()
+        P.Point(switch, "RIGHT", r, "RIGHT", -size.ROW_PAD, 0)
+    end)
 
     -- The grip: three short horizontal strips, the universal "this moves"
     -- glyph. Its hit area is the full row height and wider than the glyph,
     -- because a 10px target is not one a player can find in a hurry.
     local grip = CreateFrame("Frame", nil, r)
-    grip:SetWidth(GRIP_W + PAD * 0.5)
-    grip:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
-    grip:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
+    Layout(function()
+        grip:ClearAllPoints()
+        P.Size(grip, GRIP_W + size.ROW_PAD, nil)
+        P.Point(grip, "TOPLEFT", r, "TOPLEFT", 0, 0)
+        P.Point(grip, "BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
+    end)
     grip:EnableMouse(true)
     grip.lines = {}
     for i = 1, 3 do
         local t = grip:CreateTexture(nil, "ARTWORK")
         t:SetColorTexture(1, 1, 1, 1)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
-        t:SetSize(10, 1)
-        t:SetPoint("CENTER", grip, "CENTER", PAD * 0.25, (2 - i) * 4)
+        P.Edge(t)
+        Layout(function()
+            t:ClearAllPoints()
+            P.Size(t, 10, nil)
+            t:SetHeight(P.Hairline(r) * 2)
+            P.Point(t, "CENTER", grip, "CENTER", size.ROW_PAD * 0.5, (2 - i) * 4)
+        end)
         grip.lines[i] = t
     end
 
     local icon = r:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(COMPACT_H - 10, COMPACT_H - 10)
-    icon:SetPoint("LEFT", grip, "RIGHT", 0, 0)
+    Layout(function()
+        icon:ClearAllPoints()
+        P.Size(icon, COMPACT_H - 10, COMPACT_H - 10)
+        P.Point(icon, "LEFT", grip, "RIGHT", 0, 0)
+    end)
 
-    local label = FS(r, FS_BODY, TEXT)
-    label:SetPoint("LEFT", icon, "RIGHT", LABEL_GAP, 0)
-    label:SetPoint("RIGHT", track, "LEFT", -LABEL_GAP, 0)
+    local label = S.Label(r, S.fontBody, "LEFT")
+    Layout(function()
+        label:ClearAllPoints()
+        P.Point(label, "LEFT", icon, "RIGHT", LABEL_GAP, 0)
+        P.Point(label, "RIGHT", switch, "LEFT", -LABEL_GAP, 0)
+    end)
 
     local db = ns.DB()
 
@@ -528,7 +474,6 @@ function W.PingRow(parent, y, index, pos)
     local function PaintGrip(hover)
         local a = hover and 0.9 or 0.35
         for _, t in ipairs(grip.lines) do
-            t:SetHeight(math.max(ns.OnePixel(r) * 1.5, 1))
             t:SetVertexColor(1, 1, 1, a)
         end
     end
@@ -541,31 +486,17 @@ function W.PingRow(parent, y, index, pos)
         label:SetText(def.name)
 
         local on = db.enabledTypes[def.key] and true or false
-        local ac = ns.ACCENT
+        switch:SetChecked(on)
         if on then
-            trackFill:SetColorTexture(ac[1], ac[2], ac[3], 0.75)
-            knob:SetVertexColor(1, 1, 1, 1)
-            knob:ClearAllPoints()
-            knob:SetPoint("RIGHT", track, "RIGHT", -3, 0)
             icon:SetAlpha(1)
-            label:SetTextColor(TEXT[1], TEXT[2], TEXT[3], 1)
+            label:SetTextColor(Unpack(S.color.text))
         else
-            trackFill:SetColorTexture(TRACK_OFF[1], TRACK_OFF[2], TRACK_OFF[3], TRACK_OFF[4])
-            knob:SetVertexColor(1, 1, 1, 0.5)
-            knob:ClearAllPoints()
-            knob:SetPoint("LEFT", track, "LEFT", 3, 0)
             icon:SetAlpha(0.35)
-            label:SetTextColor(TEXT_SEC[1], TEXT_SEC[2], TEXT_SEC[3], TEXT_SEC[4])
+            label:SetTextColor(Unpack(TEXT_SEC))
         end
 
-        local dragging = drag.pos == r.pos
-        if dragging then
-            ns.UpdateBorder(outline, 1, ac[1], ac[2], ac[3], 0.9)
-            outline:Show()
-        else
-            outline:Hide()
-        end
-        PaintGrip(dragging or grip:IsMouseOver())
+        outline:SetShown(drag.pos == r.pos)
+        PaintGrip(drag.pos == r.pos or grip:IsMouseOver())
     end
 
     grip:SetScript("OnMouseDown", function(_, button)
@@ -729,85 +660,27 @@ end
 --  The window
 -------------------------------------------------------------------------------
 
--- One design unit -> one physical pixel. GetScreenWidth is UIParent's width in
--- its own scaled units and GetPhysicalScreenSize is the real display width, so
--- their ratio is exactly the factor that cancels the user's UI scale. Set on
--- the outermost frame and nowhere else.
-local function CanvasScale()
-    local physW = GetPhysicalScreenSize()
-    if not physW or physW <= 0 then return 1 end
-    local w = GetScreenWidth()
-    if not w or w <= 0 then return 1 end
-    return w / physW
-end
-
 local function BuildWindow()
-    local f = CreateFrame("Frame", "EnvironmentPingOptions", UIParent)
-    f:SetFrameStrata("HIGH")
-    f:SetWidth(DESIGN_W)
+    local f = S.Window("EnvironmentPingOptions", WINDOW_W, nil, "EnvironmentPing")
     f:SetPoint("CENTER")
-    f:SetMovable(true)
-    f:SetClampedToScreen(true)
-    f:EnableMouse(true)
-    f:Hide()
+    content = f.Content
 
-    Fill(f, PANEL_BG)
-    f.border = ns.CreateBorder(f, 1)
-
-    local bar = CreateFrame("Frame", nil, f)
-    bar:SetHeight(TITLE_H)
-    bar:SetPoint("TOPLEFT")
-    bar:SetPoint("TOPRIGHT")
-    bar:EnableMouse(true)
-    bar:RegisterForDrag("LeftButton")
-    bar:SetScript("OnDragStart", function() f:StartMoving() end)
-    bar:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
-
-    local barRule = bar:CreateTexture(nil, "ARTWORK")
-    barRule:SetColorTexture(DIVIDER[1], DIVIDER[2], DIVIDER[3], DIVIDER[4])
-    barRule:SetPoint("BOTTOMLEFT")
-    barRule:SetPoint("BOTTOMRIGHT")
-
-    local close = CreateFrame("Button", nil, bar)
-    close:SetSize(TITLE_H - 16, TITLE_H - 16)
-    close:SetPoint("RIGHT", bar, "RIGHT", -PAD * 0.5, 0)
-    local x = FS(close, FS_CONTROL, TEXT_DIM, "CENTER")
-    x:SetPoint("LEFT")
-    x:SetPoint("RIGHT")
-    x:SetText("X")
-    close:SetScript("OnEnter", function() x:SetTextColor(1, 1, 1, 1) end)
-    close:SetScript("OnLeave", function() x:SetTextColor(TEXT_DIM[1], TEXT_DIM[2], TEXT_DIM[3], TEXT_DIM[4]) end)
-    close:SetScript("OnClick", function() f:Hide() end)
-
-    local title = FS(bar, FS_TITLE, TEXT)
-    title:SetPoint("LEFT", bar, "LEFT", PAD, 0)
-    title:SetPoint("RIGHT", close, "LEFT", -LABEL_GAP, 0)
-    title:SetText("EnvironmentPing")
-
-    f.bar = bar
-    f.barRule = barRule
-
-    content = CreateFrame("Frame", nil, f)
-    content:SetPoint("TOPLEFT", bar, "BOTTOMLEFT")
-    content:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT")
-
-    local hint = FS(f, FS_CAPTION, TEXT_SEC)
-    hint:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PAD, 8)
-    hint:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, 8)
+    local hint = S.Label(f, S.fontHint, "LEFT")
+    Layout(function()
+        hint:ClearAllPoints()
+        P.Point(hint, "BOTTOMLEFT", f, "BOTTOMLEFT", PAD, 8)
+        P.Point(hint, "BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, 8)
+    end)
     f.hint = hint
 
-    -- Re-derive the canvas scale on every open: resolution, monitor and UI
-    -- scale all change while the window is closed, so PLAYER_LOGIN is not the
-    -- last word on any of them.
     -- A drag must not outlive the window: Escape mid-drag would otherwise
     -- leave the row outlined and the driver ticking behind a hidden frame.
     f:SetScript("OnHide", function() EndDrag(true) end)
 
-    f:SetScript("OnShow", function(self)
-        ns.RefreshPhysical()
-        self:SetScale(CanvasScale())
-        ns.UpdateBorder(self.border, 1, BORDER[1], BORDER[2], BORDER[3], BORDER[4])
-        self.barRule:SetHeight(ns.OnePixel(self))
+    f:SetScript("OnShow", function()
+        -- Resolution, monitor and UI scale all change while the window is
+        -- closed, so PLAYER_LOGIN is not the last word on any of them.
+        P.Resnap()
         if ns.RefreshPage then ns.RefreshPage() end
     end)
 
@@ -820,7 +693,7 @@ local function RefreshHint()
     if not window then return end
     local key = GetBindingKey("ENVIRONMENTPING_HOLD")
     if not key then
-        window.hint:SetText("|cffff5555No key bound|r -- set one above.")
+        window.hint:SetText(S.Colorize(S.color.bad, "No key bound") .. " -- set one above.")
     elseif ns.DB().instantPing then
         window.hint:SetText("Hold " .. (GetBindingText(key) or key) .. ", left-click to ping instantly.")
     else
@@ -839,13 +712,15 @@ function ns.ToggleOptions()
     if not window then
         window = BuildWindow()
         local h = BuildPage(content)
-        content:SetHeight(h)
-        -- The window's height comes from the same cursor the layout produced,
-        -- plus the title bar and the hint line's own strip.
-        window:SetHeight(TITLE_H + h + 14)
-        -- One proxy in UISpecialFrames, so Escape closes this the way it closes
-        -- every other window rather than needing a key handler of its own.
-        tinsert(UISpecialFrames, "EnvironmentPingOptions")
+        local total = size.HEADER_H + h + HINT_H
+        -- The page height comes from the cursor, the window's from the page
+        -- plus the band and the hint strip; both re-snap with the scale.
+        Layout(function()
+            P.Size(content, nil, h)
+            P.Size(window, nil, total)
+        end)
+        -- One proxy in UISpecialFrames (S.Window registers it), so Escape
+        -- closes this the way it closes every other window.
     end
     window:SetShown(not window:IsShown())
 end
