@@ -6,6 +6,7 @@
 ## IconTexture: Interface\AddOns\EnvironmentPing\Media\Icon
 ## SavedVariables: EnvironmentPingDB
 ## AddonCompartmentFunc: EnvironmentPing_OnCompartmentClick
+## X-Curse-Project-ID: 1672381
 
 # Bindings.xml is auto-loaded from the addon root and must NOT be listed here,
 # or every <Binding> in it registers twice.
