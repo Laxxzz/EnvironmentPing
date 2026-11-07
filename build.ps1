@@ -24,6 +24,7 @@ param(
         "EnvironmentPing.lua",
         "EnvironmentPing_Options.lua",
         "Bindings.xml",
+        "Media/Icon.tga",
         "README.md",
         "LICENSE"
     )
@@ -53,7 +54,9 @@ if (-not (Test-Path $dist)) { New-Item -ItemType Directory -Path $dist -Force | 
 foreach ($f in $Include) {
     $src = Join-Path $root $f
     if (-not (Test-Path $src)) { throw "Listed in the build but missing: $f" }
-    Copy-Item $src -Destination (Join-Path $payload $f)
+    $dst = Join-Path $payload $f
+    New-Item -ItemType Directory -Path (Split-Path $dst) -Force | Out-Null
+    Copy-Item $src -Destination $dst
 }
 
 if (Test-Path $zip) { Remove-Item $zip -Force }
