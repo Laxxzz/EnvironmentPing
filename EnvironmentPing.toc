@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120105, 16001
 ## Title: EnvironmentPing
 ## Notes: Hold a key, left-click to open a ping wheel at your cursor, flick to choose, release to send. Pings target the environment only.
 ## Author: Laxx
