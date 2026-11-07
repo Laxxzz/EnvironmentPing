@@ -2,7 +2,7 @@
 ## Title: EnvironmentPing
 ## Notes: Hold a key, left-click to open a ping wheel at your cursor, flick to choose, release to send. Pings target the environment only.
 ## Author: Laxx
-## Version: 0.2.0
+## Version: 1.0.1
 ## IconTexture: Interface\AddOns\EnvironmentPing\Media\Icon
 ## SavedVariables: EnvironmentPingDB
 ## AddonCompartmentFunc: EnvironmentPing_OnCompartmentClick
