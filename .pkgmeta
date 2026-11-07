@@ -1,0 +1,11 @@
+package-as: EnvironmentPing
+
+ignore:
+  - dev
+  - build.ps1
+  - .claude
+  - .gitattributes
+  - .gitignore
+  - .pkgmeta
+  - CLAUDE.md
+  - AGENTS.md

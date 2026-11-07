@@ -1,0 +1,11 @@
+{
+  "githubRepo": "Laxxzz/EnvironmentPing",
+  "targets": ["mirror", "github", "curse"],
+  "mirror": {
+    "url": "https://github.com/Laxxzz/EnvironmentPing.git",
+    "branch": "main"
+  },
+  "baseBranch": "main",
+  "requiredEntries": ["EnvironmentPing.lua", "EnvironmentPing_Options.lua", "Bindings.xml"],
+  "forbiddenEntries": ["dev/", "build\\.ps1$", "\\.claude/", "CLAUDE\\.md$", "AGENTS\\.md$"]
+}
