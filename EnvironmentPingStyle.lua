@@ -1,7 +1,7 @@
 -- EnvironmentPing: shared visual language for the options window.
 --
 -- A flat, near-black canvas with a slight green hue cast, lifted controls,
--- recessed insets, hairline borders rather than bevels, and ONE accent (#2FA88A)
+-- recessed insets, hairline borders rather than bevels, and ONE accent (#1DB954)
 -- used for state. This is SimpleLootCouncil's current design language,
 -- hue-rotated from its blue to this addon's green; the neutrals carry 0.75x
 -- SLC's saturation and the accent ramp (accent / accentDim / accentPale / knob)
