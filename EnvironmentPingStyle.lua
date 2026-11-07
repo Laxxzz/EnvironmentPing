@@ -1,9 +1,9 @@
 -- EnvironmentPing: shared visual language for the options window.
 --
--- A flat, near-black canvas with a slight teal-green hue cast, lifted controls,
+-- A flat, near-black canvas with a slight green hue cast, lifted controls,
 -- recessed insets, hairline borders rather than bevels, and ONE accent (#2FA88A)
 -- used for state. This is SimpleLootCouncil's current design language,
--- hue-rotated from its blue to this addon's teal-green; the neutrals carry 0.75x
+-- hue-rotated from its blue to this addon's green; the neutrals carry 0.75x
 -- SLC's saturation and the accent ramp (accent / accentDim / accentPale / knob)
 -- keeps SLC's relationships.
 --
@@ -27,12 +27,12 @@ local Snap = P.Snap
 -- Palette. Hex in the comments is how each was picked.
 -- ---------------------------------------------------------------------
 S.color = {
-    canvas       = { 0.056, 0.085, 0.078 }, -- #0E1614  panel
+    canvas       = { 0.056, 0.085, 0.066 }, -- #0E1611  panel
 
     -- Controls are RAISED, with hover and pressed steps either side.
-    control      = { 0.070, 0.111, 0.101 }, -- #121C1A  button rest
-    controlHover = { 0.109, 0.174, 0.157 }, -- #1C2C28  button hover
-    controlDown  = { 0.040, 0.066, 0.060 }, -- #0A110F  button pressed
+    control      = { 0.070, 0.111, 0.084 }, -- #121C15  button rest
+    controlHover = { 0.109, 0.174, 0.132 }, -- #1C2C22  button hover
+    controlDown  = { 0.040, 0.066, 0.049 }, -- #0A110D  button pressed
 
     controlBorder      = { 1, 1, 1, 0.22 },
     controlBorderHover = { 1, 1, 1, 0.55 },
@@ -45,17 +45,17 @@ S.color = {
     borderBright = { 1, 1, 1, 0.20 },       -- focused / hovered edge
 
     text         = { 1, 1, 1, 1.00 },       -- primary
-    textMuted    = { 0.736, 0.845, 0.818 }, -- #BCD7D0  secondary
-    textFaint    = { 0.553, 0.671, 0.641 }, -- #8DABA4  hints, disabled
+    textMuted    = { 0.736, 0.845, 0.774 }, -- #BCD7C5  secondary
+    textFaint    = { 0.553, 0.671, 0.594 }, -- #8DAB98  hints, disabled
 
     rowOdd       = { 0, 0, 0, 0.10 },       -- alternating list stripe
     rowEven      = { 0, 0, 0, 0.20 },
     rowHover     = { 1, 1, 1, 0.07 },
 
     -- The one hue.
-    accent       = { 0.184, 0.659, 0.541 }, -- #2FA88A  teal-green
-    accentDim    = { 0.184, 0.411, 0.355 }, -- #2F695B  pressed accent
-    accentPale   = { 0.265, 0.837, 0.695 }, -- #44D5B1
+    accent       = { 0.114, 0.725, 0.329 }, -- #1DB954  green
+    accentDim    = { 0.149, 0.443, 0.253 }, -- #267140  pressed accent
+    accentPale   = { 0.176, 0.921, 0.439 }, -- #2DEB70
 
     good         = { 0.400, 0.780, 0.541 }, -- #66C78A  success
     bad          = { 0.898, 0.451, 0.451 }, -- #E57373  error
@@ -70,24 +70,24 @@ S.color.surfaceHover = S.color.controlHover
 -- The window's three-stop ground (the fall is not linear). S.Window draws the
 -- gradient between canvasTop and canvasBottom; canvasMid is the palette's
 -- middle stop.
-S.color.canvasTop    = { 0.060, 0.089, 0.082 } -- #0F1715
-S.color.canvasMid    = { 0.035, 0.059, 0.053 } -- #090F0E
-S.color.canvasBottom = { 0.027, 0.048, 0.042 } -- #070C0B
+S.color.canvasTop    = { 0.060, 0.089, 0.070 } -- #0F1712
+S.color.canvasMid    = { 0.035, 0.059, 0.044 } -- #090F0B
+S.color.canvasBottom = { 0.027, 0.048, 0.034 } -- #070C09
 
-S.color.band         = { 0.048, 0.074, 0.067 } -- #0C1311  title band, footer
-S.color.rail         = { 0.044, 0.074, 0.066 } -- #0B1311
-S.color.railText     = { 0.296, 0.469, 0.426 } -- #4B786D
-S.color.card         = { 0.064, 0.097, 0.089 } -- #101917
-S.color.cardRaised   = { 0.080, 0.116, 0.107 } -- #141D1B
+S.color.band         = { 0.048, 0.074, 0.057 } -- #0C130F  title band, footer
+S.color.rail         = { 0.044, 0.074, 0.054 } -- #0B130E
+S.color.railText     = { 0.296, 0.469, 0.357 } -- #4B785B
+S.color.card         = { 0.064, 0.097, 0.076 } -- #101913
+S.color.cardRaised   = { 0.080, 0.116, 0.093 } -- #141D18
 S.color.cardLift     = { 1, 1, 1, 0.03 }       -- white at 3%
 
 -- The divider ramp. Four steps, dimmest to brightest: a rule between rows, a
 -- panel edge, a control edge, and the edge of something focused or selected.
-S.color.rule         = { 0.119, 0.172, 0.158 } -- #1E2C28
-S.color.edge         = { 0.134, 0.187, 0.174 } -- #22302C
-S.color.edgeBright   = { 0.160, 0.225, 0.208 } -- #293935
-S.color.steel        = { 0.201, 0.277, 0.258 } -- #334742  control borders
-S.color.steelBright  = { 0.217, 0.293, 0.274 } -- #374B46  hover / focus
+S.color.rule         = { 0.119, 0.172, 0.137 } -- #1E2C23
+S.color.edge         = { 0.134, 0.187, 0.153 } -- #223027
+S.color.edgeBright   = { 0.160, 0.225, 0.183 } -- #29392F
+S.color.steel        = { 0.201, 0.277, 0.228 } -- #33473A  control borders
+S.color.steelBright  = { 0.217, 0.293, 0.244 } -- #374B3E  hover / focus
 
 S.color.danger       = { 0.769, 0.282, 0.353 } -- #C4485A
 S.color.dangerEdge   = { 0.420, 0.200, 0.251 } -- #6B3340
@@ -95,18 +95,18 @@ S.color.dangerText   = { 0.878, 0.541, 0.588 } -- #E08A96
 S.color.warn         = { 0.851, 0.627, 0.306 } -- #D9A04E
 
 -- A switch's OFF state: a surface, not text alphas.
-S.color.neutral600   = { 0.440, 0.490, 0.477 } -- #707D7A  the off knob
-S.color.neutral700   = { 0.335, 0.394, 0.380 } -- #566461  the off track
+S.color.neutral600   = { 0.440, 0.490, 0.457 } -- #707D75  the off knob
+S.color.neutral700   = { 0.335, 0.394, 0.356 } -- #56645B  the off track
 
 -- The ON knob: a pale tint of the accent rather than white.
-S.color.knob         = { 0.330, 0.882, 0.745 } -- #54E1BE
+S.color.knob         = { 0.244, 0.963, 0.497 } -- #3EF67F
 
 -- The window's outer edge: the only thing separating it from the game UI.
-S.color.windowEdge   = { 0.230, 0.295, 0.279 } -- #3B4B47
+S.color.windowEdge   = { 0.230, 0.295, 0.253 } -- #3B4B41
 
 -- The title band, its own small gradient sitting on the window's.
-S.color.headerTop    = { 0.094, 0.114, 0.109 } -- #181D1C
-S.color.headerBottom = { 0.068, 0.097, 0.090 } -- #111917
+S.color.headerTop    = { 0.094, 0.114, 0.101 } -- #181D1A
+S.color.headerBottom = { 0.068, 0.097, 0.078 } -- #111914
 
 -- ---------------------------------------------------------------------
 -- Spacing scale. Named, and computed where derivable.

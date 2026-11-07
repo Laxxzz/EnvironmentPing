@@ -70,10 +70,10 @@ ns.PING_TYPES = {
     { key = "threat",    num = 6, atlas = "Ping_Marker_Icon_Threat",    name = PING_TYPE_THREAT    or "Threat" },
 }
 
--- One accent, one hue: #2FA88A teal-green, the same value as the options
+-- One accent, one hue: #1DB954 Spotify green, the same value as the options
 -- window's accent (EnvironmentPingStyle.lua). Everything else the addon draws is
 -- white or black at an alpha.
-ns.ACCENT = { 0.184, 0.659, 0.541 }
+ns.ACCENT = { 0.114, 0.725, 0.329 }
 
 ns.MIN_DEAD_ZONE, ns.MAX_DEAD_ZONE = 4, 48
 ns.MIN_RADIUS, ns.MAX_RADIUS = 60, 200
@@ -801,7 +801,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         ns.Refresh()
         C_Timer.NewTicker(0.03, Tick)
         if not GetBindingKey("ENVIRONMENTPING_HOLD") then
-            print("|cff2fa88aEnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
+            print("|cff1db954EnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then

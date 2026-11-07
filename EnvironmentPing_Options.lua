@@ -19,7 +19,7 @@
 --      turns a long localized string into an overlap.
 --
 --  Colour is white or black at an alpha over a near-black ground with a slight
---  teal cast, plus exactly ONE accent -- the same teal-green the wheel uses.
+--  green cast, plus exactly ONE accent -- the same green the wheel uses.
 --  Nothing else has a hue, which is what makes the accent mean "on" rather
 --  than "decorated".
 -------------------------------------------------------------------------------
