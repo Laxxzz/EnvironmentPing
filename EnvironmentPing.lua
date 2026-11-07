@@ -314,21 +314,30 @@ local function BuildHub(parent)
     hub.ring = disc(HUB_SIZE, "ARTWORK", 1)
     hub.fill = disc(HUB_SIZE - 4, "ARTWORK", 2)
 
-    -- The E, as four strips. Bounding box 10 x 16 about the hub's centre, so
-    -- the glyph is optically centred inside the ring without a media file.
-    local function stroke(w, h, dy)
+    -- "EP", as strips: a bare E read too much like another addon's mark.
+    -- Bounding box 18 x 14 about the hub's centre, so the glyph is optically
+    -- centred inside the ring without a media file.
+    hub.glyph = {}
+    local function stroke(x, dy, w, h)
         local t = hub:CreateTexture(nil, "ARTWORK", nil, 3)
         t:SetColorTexture(1, 1, 1, 1)
         t:SetSnapToPixelGrid(false)
         t:SetTexelSnappingBias(0)
         t:SetSize(w, h)
-        t:SetPoint("BOTTOMLEFT", hub, "CENTER", -5, -8 + (dy or 0))
+        t:SetPoint("BOTTOMLEFT", hub, "CENTER", x, -7 + dy)
+        hub.glyph[#hub.glyph + 1] = t
         return t
     end
-    hub.stem = stroke(3, 16)
-    hub.foot = stroke(10, 3)
-    hub.mid = stroke(8, 3, 6.5)
-    hub.top = stroke(10, 3, 13)
+    -- E
+    stroke(-9, 0, 2, 14)    -- stem
+    stroke(-9, 0, 8, 2)     -- foot
+    stroke(-9, 6, 6, 2)     -- middle
+    stroke(-9, 12, 8, 2)    -- top
+    -- P
+    stroke(1, 0, 2, 14)     -- stem
+    stroke(1, 12, 8, 2)     -- top of the bowl
+    stroke(1, 6, 8, 2)      -- bottom of the bowl
+    stroke(7, 6, 2, 8)      -- right side of the bowl
 
     return hub
 end
@@ -418,10 +427,7 @@ local function PaintWheel(selected)
 
     wheel.hub.ring:SetVertexColor(ar, ag, ab, 1)
     wheel.hub.fill:SetVertexColor(0.05, 0.05, 0.06, 0.95)
-    wheel.hub.stem:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.foot:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.mid:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.top:SetVertexColor(ar, ag, ab, 1)
+    for _, t in ipairs(wheel.hub.glyph) do t:SetVertexColor(ar, ag, ab, 1) end
 
     for i = 1, #entries do
         local s = wheel.slots[i]
