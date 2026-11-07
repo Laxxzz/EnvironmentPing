@@ -224,6 +224,47 @@ S.fontNum     = MakeFont("EnvironmentPingFontNum",     FONT_TABULAR, 12,   S.col
 -- Primitives
 -- ---------------------------------------------------------------------
 
+-- Rounded corners, for WINDOW SURFACES ONLY (as in CastQueueOverlay and SLC):
+-- controls are square with a one-pixel border. Nine-sliced art in art/, radius
+-- 8, which must match CastQueueOverlay's dev/make_art.py.
+local ART = "Interface\\AddOns\\EnvironmentPing\\art\\"
+local ROUND_FILL    = ART .. "rounded"
+local ROUND_OUTLINE = ART .. "rounded-outline"
+local RADIUS = 8
+
+-- Whether the art actually loaded. A mask that fails to load masks everything,
+-- which would present as a blank window; the flat path is the fallback.
+local rounded = false
+do
+    local scratch = CreateFrame("Frame")
+    local probe = scratch:CreateTexture(nil, "BACKGROUND")
+    rounded = probe:SetTexture(ROUND_FILL) and true or false
+    probe:SetTexture(nil)
+    scratch:Hide()
+end
+S.rounded = rounded
+
+local function SliceNine(tex, asset)
+    tex:SetTexture(asset)
+    tex:SetTextureSliceMargins(RADIUS, RADIUS, RADIUS, RADIUS)
+    tex:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    return tex
+end
+
+-- A mask that clips whatever it is applied to down to the rounded rectangle.
+-- `bounds` is the frame the CORNERS follow: the title band is clipped by the
+-- WINDOW's corners, since masks are positional.
+function S.RoundMask(bounds)
+    if not rounded then return nil end
+    local mask = bounds:CreateMaskTexture()
+    mask:SetAllPoints(bounds)
+    -- CLAMPTOBLACKADDITIVE, or the mask tiles and clips nothing outside its rect.
+    mask:SetTexture(ROUND_FILL, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetTextureSliceMargins(RADIUS, RADIUS, RADIUS, RADIUS)
+    mask:SetTextureSliceMode(Enum.UITextureSliceMode.Stretched)
+    return mask
+end
+
 -- Every FontString goes through here. Bounded on both sides by the caller, with
 -- word wrap off: a text region free to grow is what turns a long localized
 -- string into an overlap.
@@ -312,6 +353,22 @@ function S.Border(frame, color, layer, thickness)
 
     borders[frame] = handle
     return handle
+end
+
+-- The rounded counterpart of S.Border, with the same SetColor/SetShown handle.
+-- One nine-sliced ring, derived from the same shape as the mask.
+function S.RoundBorder(frame, color, layer)
+    if not rounded then return S.Border(frame, color, layer) end
+
+    local ring = frame:CreateTexture(nil, layer or "BORDER")
+    ring:SetAllPoints(frame)
+    SliceNine(ring, ROUND_OUTLINE)
+    ring:SetVertexColor(Unpack(color))
+
+    return {
+        SetColor = function(_, c) ring:SetVertexColor(Unpack(c)) end,
+        SetShown = function(_, on) ring:SetShown(on and true or false) end,
+    }
 end
 
 -- A recessed panel: a hole cut in the window rather than something on it.
@@ -554,8 +611,8 @@ end
 -- ---------------------------------------------------------------------
 -- A movable frame with a gradient ground, a title band, a close button and a
 -- remembered position. `f.Content` is the frame below the band the page builds
--- into; `f.Title` and `f.Header` are exposed. Square: the art for rounded
--- corners is not shipped here.
+-- into; `f.Title` and `f.Header` are exposed. Rounded (art/), with a flat fallback if the art
+-- did not load.
 function S.Window(globalName, width, height, title)
     local f = CreateFrame("Frame", globalName, UIParent)
     P.Size(f, width, height)
@@ -569,11 +626,21 @@ function S.Window(globalName, width, height, title)
 
     -- SetGradient MODULATES the texture, so it is white underneath.
     -- "VERTICAL" takes minColor at the BOTTOM and maxColor at the TOP.
+    local windowMask = S.RoundMask(f)
     local ground = S.Fill(f, { 1, 1, 1, 1 })
+    if windowMask then ground:AddMaskTexture(windowMask) end
     ground:SetGradient("VERTICAL",
         CreateColor(S.color.canvasBottom[1], S.color.canvasBottom[2], S.color.canvasBottom[3], 1),
         CreateColor(S.color.canvasTop[1], S.color.canvasTop[2], S.color.canvasTop[3], 1))
-    f.border = S.Border(f, S.color.windowEdge, "OVERLAY")
+    -- The edge ring is its own frame above the band, close button and content,
+    -- as in SimpleLootCouncil: those are child frames and would paint over a ring
+    -- on the window itself.
+    local edge = CreateFrame("Frame", nil, f)
+    edge:EnableMouse(false)
+    edge:SetAllPoints()
+    edge:SetFrameLevel(f:GetFrameLevel() + 4)
+    f.border = S.RoundBorder(edge, S.color.windowEdge, "OVERLAY")
+    f.Edge = edge
 
     local header = CreateFrame("Frame", nil, f)
     header:SetFrameLevel(f:GetFrameLevel() + 1)
@@ -582,6 +649,8 @@ function S.Window(globalName, width, height, title)
     P.Size(header, nil, size.HEADER_H)
     P.OnRescale(function() P.Size(header, nil, size.HEADER_H) end)
     local band = S.Fill(header, { 1, 1, 1, 1 })
+    -- Clipped by the WINDOW's corners, not its own.
+    if windowMask then band:AddMaskTexture(windowMask) end
     band:SetGradient("VERTICAL",
         CreateColor(S.color.headerBottom[1], S.color.headerBottom[2], S.color.headerBottom[3], 1),
         CreateColor(S.color.headerTop[1], S.color.headerTop[2], S.color.headerTop[3], 1))

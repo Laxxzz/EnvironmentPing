@@ -25,6 +25,8 @@ param(
         "EnvironmentPingStyle.lua",
         "EnvironmentPing.lua",
         "EnvironmentPing_Options.lua",
+        "art/rounded.tga",
+        "art/rounded-outline.tga",
         "fonts/URWGothic-Demi.ttf",
         "fonts/URWGothic-DemiCaps.ttf",
         "fonts/URWGothic-DemiTabular.ttf",
