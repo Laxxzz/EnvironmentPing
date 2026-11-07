@@ -2,7 +2,7 @@
 ## Title: EnvironmentPing
 ## Notes: Hold a key, left-click to open a ping wheel at your cursor, flick to choose, release to send. Pings target the environment only.
 ## Author: Laxx
-## Version: 0.2.0
+## Version: 1.0.1
 ## IconTexture: Interface\AddOns\EnvironmentPing\Media\Icon
 ## SavedVariables: EnvironmentPingDB
 ## AddonCompartmentFunc: EnvironmentPing_OnCompartmentClick
@@ -11,5 +11,7 @@
 # Bindings.xml is auto-loaded from the addon root and must NOT be listed here,
 # or every <Binding> in it registers twice.
 
+EnvironmentPingPixel.lua
+EnvironmentPingStyle.lua
 EnvironmentPing.lua
 EnvironmentPing_Options.lua

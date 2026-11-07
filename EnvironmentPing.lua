@@ -70,9 +70,10 @@ ns.PING_TYPES = {
     { key = "threat",    num = 6, atlas = "Ping_Marker_Icon_Threat",    name = PING_TYPE_THREAT    or "Threat" },
 }
 
--- One accent, one hue. Everything else the addon draws is white or black at an
--- alpha -- see EnvironmentPing_Options.lua.
-ns.ACCENT = { 0.28, 0.55, 0.92 }
+-- One accent, one hue: #1DB954 Spotify green, the same value as the options
+-- window's accent (EnvironmentPingStyle.lua). Everything else the addon draws is
+-- white or black at an alpha.
+ns.ACCENT = { 0.114, 0.725, 0.329 }
 
 ns.MIN_DEAD_ZONE, ns.MAX_DEAD_ZONE = 4, 48
 ns.MIN_RADIUS, ns.MAX_RADIUS = 60, 200
@@ -211,22 +212,13 @@ end
 --  or nil during a display-mode change, and dividing by that makes every
 --  snapped size NaN long after the change that caused it.
 -------------------------------------------------------------------------------
-local perfect, physH
-
-local function RefreshPhysical()
-    local _, h = GetPhysicalScreenSize()
-    if h and h > 0 then physH = h
-    elseif not physH then physH = 1080 end
-    perfect = 768 / physH
-end
-RefreshPhysical()
+--  The measurement itself lives in EnvironmentPingPixel.lua, which keeps the last
+--  good height the same way; these are the names the wheel code already uses.
+local P = ns.Pixel
+local RefreshPhysical = P.Recompute
 ns.RefreshPhysical = RefreshPhysical
 
-local function OnePixel(frame)
-    local s = frame and frame:GetEffectiveScale() or 1
-    if s <= 0 then s = 1 end
-    return perfect / s
-end
+local OnePixel = P.OnePixel
 ns.OnePixel = OnePixel
 
 -- Four flat strips in a container of their own, not BackdropTemplate: an
@@ -241,8 +233,7 @@ local function CreateBorder(host, level)
     local function edge(p1, p2)
         local t = c:CreateTexture(nil, "OVERLAY")
         t:SetColorTexture(1, 1, 1, 1)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
+        P.Edge(t)
         t:SetPoint(p1)
         t:SetPoint(p2)
         c.edges[#c.edges + 1] = t
@@ -323,21 +314,30 @@ local function BuildHub(parent)
     hub.ring = disc(HUB_SIZE, "ARTWORK", 1)
     hub.fill = disc(HUB_SIZE - 4, "ARTWORK", 2)
 
-    -- The E, as four strips. Bounding box 10 x 16 about the hub's centre, so
-    -- the glyph is optically centred inside the ring without a media file.
-    local function stroke(w, h, dy)
+    -- "EP", as strips: a bare E read too much like another addon's mark.
+    -- Bounding box 18 x 14 about the hub's centre, so the glyph is optically
+    -- centred inside the ring without a media file.
+    hub.glyph = {}
+    local function stroke(x, dy, w, h)
         local t = hub:CreateTexture(nil, "ARTWORK", nil, 3)
         t:SetColorTexture(1, 1, 1, 1)
         t:SetSnapToPixelGrid(false)
         t:SetTexelSnappingBias(0)
         t:SetSize(w, h)
-        t:SetPoint("BOTTOMLEFT", hub, "CENTER", -5, -8 + (dy or 0))
+        t:SetPoint("BOTTOMLEFT", hub, "CENTER", x, -7 + dy)
+        hub.glyph[#hub.glyph + 1] = t
         return t
     end
-    hub.stem = stroke(3, 16)
-    hub.foot = stroke(10, 3)
-    hub.mid = stroke(8, 3, 6.5)
-    hub.top = stroke(10, 3, 13)
+    -- E
+    stroke(-9, 0, 2, 14)    -- stem
+    stroke(-9, 0, 8, 2)     -- foot
+    stroke(-9, 6, 6, 2)     -- middle
+    stroke(-9, 12, 8, 2)    -- top
+    -- P
+    stroke(1, 0, 2, 14)     -- stem
+    stroke(1, 12, 8, 2)     -- top of the bowl
+    stroke(1, 6, 8, 2)      -- bottom of the bowl
+    stroke(7, 6, 2, 8)      -- right side of the bowl
 
     return hub
 end
@@ -427,10 +427,7 @@ local function PaintWheel(selected)
 
     wheel.hub.ring:SetVertexColor(ar, ag, ab, 1)
     wheel.hub.fill:SetVertexColor(0.05, 0.05, 0.06, 0.95)
-    wheel.hub.stem:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.foot:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.mid:SetVertexColor(ar, ag, ab, 1)
-    wheel.hub.top:SetVertexColor(ar, ag, ab, 1)
+    for _, t in ipairs(wheel.hub.glyph) do t:SetVertexColor(ar, ag, ab, 1) end
 
     for i = 1, #entries do
         local s = wheel.slots[i]
@@ -804,7 +801,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         ns.Refresh()
         C_Timer.NewTicker(0.03, Tick)
         if not GetBindingKey("ENVIRONMENTPING_HOLD") then
-            print("|cff4a8ceaEnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
+            print("|cff1db954EnvironmentPing|r: bind |cffffffffPing Wheel|r under Key Bindings, then hold it and left-click. |cffffffff/ep|r for options.")
         end
 
     elseif event == "PLAYER_REGEN_ENABLED" then

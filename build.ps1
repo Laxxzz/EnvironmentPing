@@ -21,8 +21,17 @@ param(
     # in the build, which is the safe direction for a list to be wrong in.
     [string[]]$Include = @(
         "EnvironmentPing.toc",
+        "EnvironmentPingPixel.lua",
+        "EnvironmentPingStyle.lua",
         "EnvironmentPing.lua",
         "EnvironmentPing_Options.lua",
+        "art/rounded.tga",
+        "art/rounded-outline.tga",
+        "fonts/URWGothic-Demi.ttf",
+        "fonts/URWGothic-DemiCaps.ttf",
+        "fonts/URWGothic-DemiTabular.ttf",
+        "fonts/LICENSE-URW.txt",
+        "fonts/COPYING-URW.txt",
         "Bindings.xml",
         "Media/Icon.tga",
         "README.md",
